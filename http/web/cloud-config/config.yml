@@ -42,68 +42,23 @@ coreos:
         ExecStart=/usr/bin/wget -q -O ${OUTPUT_FILE} ${URL}
         ExecStart=/usr/bin/md5sum ${OUTPUT_FILE}
         ExecStart=/usr/bin/chmod +x ${OUTPUT_FILE}
-    - name: kube-apiserver.service
-      command: start
-      enabled: true
-      content: |
-        [Unit]
-        Description=Kubernetes API Server
-        Documentation=https://github.com/kubernetes/kubernetes
-        Requires=etcd2.service
-        After=etcd2.service
-        [Service]
-        ExecStart=/opt/bin/hyperkube apiserver \
-          --service-account-lookup=false \
-          --admission-control=NamespaceLifecycle,NamespaceAutoProvision,LimitRanger,SecurityContextDeny,ResourceQuota \
-          --runtime-config=api/v1 \
-          --allow-privileged=true \
-          --insecure-bind-address=0.0.0.0 \
-          --kubelet-https=false \
-          --insecure-port=8080 \
-          --kubelet-port=10250 \
-          --service-cluster-ip-range=192.168.1.0/16 \
-          --etcd-servers=http://127.0.0.1:2379 \
-          --logtostderr=true
-        Restart=always
-        RestartSec=10
     - name: kube-kubelet.service
       command: start
       enabled: true
       content: |
         [Unit]
         Description=Kubernetes Kubelet
-        Documentation=https://github.com/GoogleCloudPlatform/kubernetes
-        Requires=kube-apiserver.service
-        After=kube-apiserver.service
+        Documentation=https://github.com/kubernetes/kubernetes
 
         [Service]
-        RuntimeDirectory=kube-kubelet
-        RuntimeDirectoryMode=0700
-
+        ExecStartPre=/usr/bin/mkdir -p /etc/kubernetes/manifests
         ExecStart=/opt/bin/hyperkube kubelet \
-          --address=0.0.0.0 \
           --api-servers=http://127.0.0.1:8080 \
-          --logtostderr=true
+          --allow-privileged=true \
+          --config=/etc/kubernetes/manifests \
+          --v=2
         Restart=always
-        RestartSec=10
-    - name: kube-proxy.service
-      command: start
-      enabled: true
-      content: |
-        [Unit]
-        Description=Kubernetes Proxy
-        Documentation=https://github.com/GoogleCloudPlatform/kubernetes
-        Requires=kube-apiserver.service
-        After=kube-apiserver.service
+        RestartSec=5
 
-        [Service]
-        LimitNOFILE=10240
-        RuntimeDirectory=kube-proxy
-        RuntimeDirectoryMode=0700
-
-        ExecStart=/opt/bin/hyperkube proxy \
-          --master=http://127.0.0.1:8080 \
-          --proxy-mode=iptables \
-          --logtostderr=true
-        Restart=always
-        RestartSec=10
+        [Install]
+        WantedBy=multi-user.target
