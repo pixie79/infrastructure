@@ -35,13 +35,31 @@ coreos:
         Type=oneshot
         RemainAfterExit=yes
         TimeoutStartSec=300
-        Environment="URL=https://storage.googleapis.com/kubernetes-release/release/v1.1.4/bin/linux/amd64/hyperkube"
+        Environment="URL=https://storage.googleapis.com/kubernetes-release/release/v1.1.7/bin/linux/amd64/hyperkube"
         Environment="OUTPUT_FILE=/opt/bin/hyperkube"
-        Environment="MD5SUM=35e8c61701824d7f96e2a0bb539fae64"
+        Environment="MD5SUM=dd57058362afce77a94ba4e9152a4525"
         ExecStart=/usr/bin/mkdir -p /opt/bin
         ExecStart=/usr/bin/wget -q -O ${OUTPUT_FILE} ${URL}
         ExecStart=/usr/bin/md5sum ${OUTPUT_FILE}
         ExecStart=/usr/bin/chmod +x ${OUTPUT_FILE}
+    - name: install-manifests.service
+      command: start
+      content: |
+        [Unit]
+        Description=Install manifests
+
+        [Service]
+        Type=oneshot
+        RemainAfterExit=yes
+        TimeoutStartSec=300
+        Environment="URL=http://nas.lan/manifests"
+        ExecStartPre=/usr/bin/mkdir -p /etc/kubernetes/manifests
+        ExecStartPre=/usr/bin/mkdir -p /svc/kubernetes/manifests
+        ExecStart=/usr/bin/wget -q -O /etc/kubernetes/manifests/kube-apiserver.yaml ${URL}/api/kube-apiserver.yaml
+        ExecStart=/usr/bin/wget -q -O /etc/kubernetes/manifests/kube-podmaster.yaml ${URL}/api/kube-podmaster.yaml
+        ExecStart=/usr/bin/wget -q -O /etc/kubernetes/manifests/kube-proxy.yaml ${URL}/compute/kube-proxy.yaml
+        ExecStart=/usr/bin/wget -q -O /svc/kubernetes/manifests/kube-controller-manager.yaml ${URL}/master/kube-controller-manager.yaml
+        ExecStart=/usr/bin/wget -q -O /svc/kubernetes/manifests/kube-scheduler.yaml ${URL}/master/kube-scheduler.yaml
     - name: kube-kubelet.service
       command: start
       enabled: true
@@ -52,6 +70,7 @@ coreos:
 
         [Service]
         ExecStartPre=/usr/bin/mkdir -p /etc/kubernetes/manifests
+        ExecStartPre=/usr/bin/mkdir -p /svc/kubernetes/manifests
         ExecStart=/opt/bin/hyperkube kubelet \
           --api-servers=http://127.0.0.1:8080 \
           --allow-privileged=true \
