@@ -58,8 +58,10 @@ coreos:
         ExecStart=/usr/bin/wget -q -O /etc/kubernetes/manifests/kube-apiserver.yaml ${URL}/api/kube-apiserver.yaml
         ExecStart=/usr/bin/wget -q -O /etc/kubernetes/manifests/kube-podmaster.yaml ${URL}/api/kube-podmaster.yaml
         ExecStart=/usr/bin/wget -q -O /etc/kubernetes/manifests/kube-proxy.yaml ${URL}/compute/kube-proxy.yaml
+        ExecStart=/usr/bin/wget -q -O /etc/kubernetes/manifests/etcd-master.yaml ${URL}/api/etcd-master.yaml
         ExecStart=/usr/bin/wget -q -O /srv/kubernetes/manifests/kube-controller-manager.yaml ${URL}/master/kube-controller-manager.yaml
         ExecStart=/usr/bin/wget -q -O /srv/kubernetes/manifests/kube-scheduler.yaml ${URL}/master/kube-scheduler.yaml
+
     - name: kube-kubelet.service
       command: start
       enabled: true
