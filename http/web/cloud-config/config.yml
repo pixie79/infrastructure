@@ -2,21 +2,13 @@
 ssh_authorized_keys:
   - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCXP0R6oA3/q7xeX++rjsZCR4mw69KZZQcDWamS8Aj+/gMO5xx7QZvf/3RYhDF/QZNix0GSG80x2KRZnwbTo/wnFp06BEeRYU3FHGOrS33O5Z4hn5THXUeiZdCUMQxeK03Lj+ajFHile20Eqx23RZwCkKWPY2hrneehLR02o1n8l1kSSxrKozLRge+uPrV1IVBszqZDcyXQ7KK5N3N/nmNnb81chZH8UGT0MlJbqKL90v+LdliVtwT9hKK2C0v3bHgDo+rPImEVMzXg85+kso88paZKntlvXSAbg9KfKHHKms/iykOhsnURPb99S/uR4Q8wUQd6piwBGcMR2hQ1P8KB allan@adegnan.net
 coreos:
-  etcd2:
-    name: "%H"
-    advertise-client-urls: "http://IPV4:2379"
-    initial-advertise-peer-urls: "http://IPV4:2380"
-    listen-client-urls: "http://0.0.0.0:2379,http://0.0.0.0:4001"
-    listen-peer-urls: "http://IPV4:2380,http://IPV4:7001"
-    initial-cluster: "node01=http://192.168.1.11:2380,node02=http://192.168.1.12:2380,node03=http://192.168.1.13:2380"
-    initial-cluster-state: "existing"
   units:
-    - name: "etcd2.service"
-      command: start
-      enable: true
+    - name: etcd.service
+      enable: false
+    - name: etcd2.service
+      enable: false
     - name: fleet.service
-      command: start
-      enable: true
+      enable: false
     - name: flanneld.service
       command: start
       enable: true
