@@ -4,10 +4,13 @@ ssh_authorized_keys:
 coreos:
   units:
     - name: etcd.service
+      command: stop
       enable: false
     - name: etcd2.service
+      command: stop
       enable: false
     - name: fleet.service
+      command: stop
       enable: false
     - name: flanneld.service
       command: start
