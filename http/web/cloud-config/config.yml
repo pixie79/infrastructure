@@ -48,16 +48,21 @@ coreos:
 
         [Service]
         Environment="URL=http://nas.lan/manifests"
+        Environment="SRC_PATH=/srv/kubernetes/manifests"
+        Environment="DST_PATH=/etc/kubernetes/manifests"
         ExecStartPre=/usr/bin/rm -rf /etc/kubernetes/manifests
         ExecStartPre=/usr/bin/rm -rf /srv/kubernetes/manifests
         ExecStartPre=/usr/bin/mkdir -p /etc/kubernetes/manifests
         ExecStartPre=/usr/bin/mkdir -p /srv/kubernetes/manifests
-        ExecStartPre=/usr/bin/curl -silent -H "remote-hostname:$(hostname)" -o /etc/kubernetes/manifests/kube-etcd.yaml ${URL}/api/kube-etcd.yaml
-        ExecStartPre=/usr/bin/curl -silent -H "remote-hostname:$(hostname)" -o /etc/kubernetes/manifests/kube-apiserver.yaml ${URL}/api/kube-apiserver.yaml
-        ExecStartPre=/usr/bin/curl -silent -H "remote-hostname:$(hostname)" -o /etc/kubernetes/manifests/kube-podmaster.yaml ${URL}/api/kube-podmaster.yaml
-        ExecStartPre=/usr/bin/curl -silent -H "remote-hostname:$(hostname)" -o /etc/kubernetes/manifests/kube-proxy.yaml ${URL}/compute/kube-proxy.yaml
-        ExecStartPre=/usr/bin/curl -silent -H "remote-hostname:$(hostname)" -o /srv/kubernetes/manifests/kube-controller-manager.yaml ${URL}/master/kube-controller-manager.yaml
-        ExecStartPre=/usr/bin/curl -silent -H "remote-hostname:$(hostname)" -o /srv/kubernetes/manifests/kube-scheduler.yaml ${URL}/master/kube-scheduler.yaml
+
+        ExecStartPre=/usr/bin/env bash -c 'curl --silent -H remote-hostname:$(hostname) -o ${DST_PATH}/kube-apiserver.yaml http://nas.lan/manifests/api/kube-apiserver.yaml'
+        ExecStartPre=/usr/bin/env bash -c 'curl --silent -H remote-hostname:$(hostname) -o ${DST_PATH}/kube-etcd.yaml ${URL}/api/kube-etcd.yaml'
+        ExecStartPre=/usr/bin/env bash -c 'curl --silent -H remote-hostname:$(hostname) -o ${DST_PATH}/kube-apiserver.yaml ${URL}/api/kube-apiserver.yaml'
+        ExecStartPre=/usr/bin/env bash -c 'curl --silent -H remote-hostname:$(hostname) -o ${DST_PATH}/kube-podmaster.yaml ${URL}/api/kube-podmaster.yaml'
+        ExecStartPre=/usr/bin/env bash -c 'curl --silent -H remote-hostname:$(hostname) -o ${DST_PATH}/kube-proxy.yaml ${URL}/compute/kube-proxy.yaml'
+        ExecStartPre=/usr/bin/env bash -c 'curl --silent -H remote-hostname:$(hostname) -o ${SRC_PATH}/kube-controller-manager.yaml ${URL}/master/kube-controller-manager.yaml'
+        ExecStartPre=/usr/bin/env bash -c 'curl --silent -H remote-hostname:$(hostname) -o ${SRC_PATH}/kube-scheduler.yaml ${URL}/master/kube-scheduler.yaml'
+
         ExecStart=/opt/bin/hyperkube kubelet \
           --api-servers=http://127.0.0.1:8080 \
           --allow-privileged=true \
