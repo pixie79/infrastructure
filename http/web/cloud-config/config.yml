@@ -34,7 +34,7 @@ coreos:
         Environment="OUTPUT_FILE=/opt/bin/hyperkube"
         Environment="MD5SUM=dd57058362afce77a94ba4e9152a4525"
         ExecStart=/usr/bin/mkdir -p /opt/bin
-        ExecStart=/usr/bin/wget -q -O ${OUTPUT_FILE} ${URL}
+        ExecStart=/usr/bin/curl --silent -o ${OUTPUT_FILE} ${URL}
         ExecStart=/usr/bin/md5sum ${OUTPUT_FILE}
         ExecStart=/usr/bin/chmod +x ${OUTPUT_FILE}
 
