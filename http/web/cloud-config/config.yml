@@ -48,10 +48,10 @@ coreos:
 
         [Service]
         Environment="URL=http://nas.lan/manifests"
+        ExecStartPre=/usr/bin/rm -rf /etc/kubernetes/manifests
+        ExecStartPre=/usr/bin/rm -rf /srv/kubernetes/manifests
         ExecStartPre=/usr/bin/mkdir -p /etc/kubernetes/manifests
         ExecStartPre=/usr/bin/mkdir -p /srv/kubernetes/manifests
-        ExecStartPre=/usr/bin/rm -rf /etc/kubernetes/manifests/*
-        ExecStartPre=/usr/bin/rm -rf /srv/kubernetes/manifests/*
         ExecStartPre=/usr/bin/curl -silent -H "remote-hostname:$(hostname)" -o /etc/kubernetes/manifests/kube-etcd.yaml ${URL}/api/kube-etcd.yaml
         ExecStartPre=/usr/bin/curl -silent -H "remote-hostname:$(hostname)" -o /etc/kubernetes/manifests/kube-apiserver.yaml ${URL}/api/kube-apiserver.yaml
         ExecStartPre=/usr/bin/curl -silent -H "remote-hostname:$(hostname)" -o /etc/kubernetes/manifests/kube-podmaster.yaml ${URL}/api/kube-podmaster.yaml
