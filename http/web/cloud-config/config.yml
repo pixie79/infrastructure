@@ -3,13 +3,13 @@ ssh_authorized_keys:
   - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCXP0R6oA3/q7xeX++rjsZCR4mw69KZZQcDWamS8Aj+/gMO5xx7QZvf/3RYhDF/QZNix0GSG80x2KRZnwbTo/wnFp06BEeRYU3FHGOrS33O5Z4hn5THXUeiZdCUMQxeK03Lj+ajFHile20Eqx23RZwCkKWPY2hrneehLR02o1n8l1kSSxrKozLRge+uPrV1IVBszqZDcyXQ7KK5N3N/nmNnb81chZH8UGT0MlJbqKL90v+LdliVtwT9hKK2C0v3bHgDo+rPImEVMzXg85+kso88paZKntlvXSAbg9KfKHHKms/iykOhsnURPb99S/uR4Q8wUQd6piwBGcMR2hQ1P8KB allan@adegnan.net
 coreos:
   units:
+    - name: fleet.service
+      command: stop
+      enable: false
     - name: etcd.service
       command: stop
       enable: false
     - name: etcd2.service
-      command: stop
-      enable: false
-    - name: fleet.service
       command: stop
       enable: false
     - name: flanneld.service
@@ -37,25 +37,6 @@ coreos:
         ExecStart=/usr/bin/wget -q -O ${OUTPUT_FILE} ${URL}
         ExecStart=/usr/bin/md5sum ${OUTPUT_FILE}
         ExecStart=/usr/bin/chmod +x ${OUTPUT_FILE}
-    - name: install-manifests.service
-      command: start
-      content: |
-        [Unit]
-        Description=Install manifests
-
-        [Service]
-        Type=oneshot
-        RemainAfterExit=yes
-        TimeoutStartSec=300
-        Environment="URL=http://nas.lan/manifests"
-        ExecStartPre=/usr/bin/mkdir -p /etc/kubernetes/manifests
-        ExecStartPre=/usr/bin/mkdir -p /srv/kubernetes/manifests
-        ExecStart=/usr/bin/wget -q -O /etc/kubernetes/manifests/kube-apiserver.yaml ${URL}/api/kube-apiserver.yaml
-        ExecStart=/usr/bin/wget -q -O /etc/kubernetes/manifests/kube-podmaster.yaml ${URL}/api/kube-podmaster.yaml
-        ExecStart=/usr/bin/wget -q -O /etc/kubernetes/manifests/kube-proxy.yaml ${URL}/compute/kube-proxy.yaml
-        ExecStart=/usr/bin/wget -q -O /etc/kubernetes/manifests/etcd-master.yaml ${URL}/api/etcd-master.yaml
-        ExecStart=/usr/bin/wget -q -O /srv/kubernetes/manifests/kube-controller-manager.yaml ${URL}/master/kube-controller-manager.yaml
-        ExecStart=/usr/bin/wget -q -O /srv/kubernetes/manifests/kube-scheduler.yaml ${URL}/master/kube-scheduler.yaml
 
     - name: kube-kubelet.service
       command: start
@@ -66,8 +47,17 @@ coreos:
         Documentation=https://github.com/kubernetes/kubernetes
 
         [Service]
+        Environment="URL=http://nas.lan/manifests"
         ExecStartPre=/usr/bin/mkdir -p /etc/kubernetes/manifests
         ExecStartPre=/usr/bin/mkdir -p /srv/kubernetes/manifests
+        ExecStartPre=/usr/bin/rm -rf /etc/kubernetes/manifests/*
+        ExecStartPre=/usr/bin/rm -rf /srv/kubernetes/manifests/*
+        ExecStart=/usr/bin/curl -silent -H "remote_host:$(hostname)" -o /etc/kubernetes/manifests/kube-etcd.yaml ${URL}/api/kube-etcd.yaml
+        ExecStart=/usr/bin/curl -silent -H "remote_host:$(hostname)" -o /etc/kubernetes/manifests/kube-apiserver.yaml ${URL}/api/kube-apiserver.yaml
+        ExecStart=/usr/bin/curl -silent -H "remote_host:$(hostname)" -o /etc/kubernetes/manifests/kube-podmaster.yaml ${URL}/api/kube-podmaster.yaml
+        ExecStart=/usr/bin/curl -silent -H "remote_host:$(hostname)" -o /etc/kubernetes/manifests/kube-proxy.yaml ${URL}/compute/kube-proxy.yaml
+        ExecStart=/usr/bin/curl -silent -H "remote_host:$(hostname)" -o /srv/kubernetes/manifests/kube-controller-manager.yaml ${URL}/master/kube-controller-manager.yaml
+        ExecStart=/usr/bin/curl -silent -H "remote_host:$(hostname)" -o /srv/kubernetes/manifests/kube-scheduler.yaml ${URL}/master/kube-scheduler.yaml
         ExecStart=/opt/bin/hyperkube kubelet \
           --api-servers=http://127.0.0.1:8080 \
           --allow-privileged=true \
