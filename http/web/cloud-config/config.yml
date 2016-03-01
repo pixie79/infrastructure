@@ -20,6 +20,10 @@ coreos:
             [Unit]
             After=var-lib.mount
             Requires=var-lib.mount
+
+            [Service]
+            ExecStartPre=/usr/bin/mkdir -p /var/lib/etcd2 /data
+            ExecStartPre=/usr/bin/ln -s /var/lib/etcd2 /data/etcd2 
     - name: fleet.service
       command: start
       enable: true
@@ -30,14 +34,28 @@ coreos:
             [Unit]
             After=var-lib.mount
             Requires=var-lib.mount
+
+            [Service]
+            ExecStartPre=/usr/bin/mkdir -p /var/lib/docker /data
+            ExecStartPre=/usr/bin/ln -s /var/lib/docker /data/docker
+    - name: format-ephemeral.service
+      command: start
+      content: |
+        [Unit]
+        Description=Formats the ephemeral drive
+        [Service]
+        Type=oneshot
+        RemainAfterExit=yes
+        ExecStart=/usr/sbin/wipefs -f /dev/sda
+        ExecStart=/usr/sbin/mkfs.ext4 -F /dev/sda
     - name: var-lib.mount
       command: start
       content: |
         [Unit]
-        Description=Mount ephemeral to /var/lib
+        Description=Mount ephemeral to /data
         [Mount]
         What=/dev/sda
-        Where=/var/lib
+        Where=/data
         Type=ext4
     - name: flanneld.service
       command: start
