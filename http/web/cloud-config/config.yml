@@ -67,10 +67,10 @@ coreos:
         [Unit]
         Description=Kubernetes Kubelet
         Documentation=https://github.com/kubernetes/kubernetes
+        After=docker.service install-kubernetes.service
+        Requires=docker.service install-kubernetes.service
 
         [Service]
-        ExecStartPre=/usr/bin/mkdir -p /etc/kubernetes/manifests
-        ExecStartPre=/usr/bin/mkdir -p /srv/kubernetes/manifests
         ExecStart=/opt/bin/hyperkube kubelet \
           --api-servers=http://127.0.0.1:8080 \
           --allow-privileged=true \
@@ -79,5 +79,19 @@ coreos:
         Restart=always
         RestartSec=5
 
-        [Install]
-        WantedBy=multi-user.target
+    - name: var-lib.mount
+      command: start
+      content: |
+        [Unit]
+        Description=Mount ephemeral to /var/lib
+        [Mount]
+        What=/dev/sda
+        Where=/var/lib
+        Type=ext4
+    - name: docker.service
+      drop-ins:
+        - name: 10-wait-var-lib.conf
+          content: |
+            [Unit]
+            After=var-lib.mount
+            Requires=var-lib.mount
