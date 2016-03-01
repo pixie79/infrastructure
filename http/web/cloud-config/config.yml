@@ -14,9 +14,31 @@ coreos:
     - name: "etcd2.service"
       command: start
       enable: true
+      drop-ins:
+        - name: 10-wait-var-lib.conf
+          content: |
+            [Unit]
+            After=var-lib.mount
+            Requires=var-lib.mount
     - name: fleet.service
       command: start
       enable: true
+    - name: docker.service
+      drop-ins:
+        - name: 10-wait-var-lib.conf
+          content: |
+            [Unit]
+            After=var-lib.mount
+            Requires=var-lib.mount
+    - name: var-lib.mount
+      command: start
+      content: |
+        [Unit]
+        Description=Mount ephemeral to /var/lib
+        [Mount]
+        What=/dev/sda
+        Where=/var/lib
+        Type=ext4
     - name: flanneld.service
       command: start
       enable: true
@@ -78,20 +100,3 @@ coreos:
           --v=2
         Restart=always
         RestartSec=5
-
-    - name: var-lib.mount
-      command: start
-      content: |
-        [Unit]
-        Description=Mount ephemeral to /var/lib
-        [Mount]
-        What=/dev/sda
-        Where=/var/lib
-        Type=ext4
-    - name: docker.service
-      drop-ins:
-        - name: 10-wait-var-lib.conf
-          content: |
-            [Unit]
-            After=var-lib.mount
-            Requires=var-lib.mount
