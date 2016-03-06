@@ -106,9 +106,8 @@ coreos:
           --api-servers=http://127.0.0.1:8080 \
           --allow-privileged=true \
           --config=/etc/kubernetes/manifests \
-          --container-runtime=rkt
-          --rkt-path=/usr/bin/rkt
-          --v=2
+          --container-runtime=rkt \
+          --rkt-path=/usr/bin/rkt 
         Restart=always
         RestartSec=5
 
