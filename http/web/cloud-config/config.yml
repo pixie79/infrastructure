@@ -17,6 +17,9 @@ coreos:
     - name: fleet.service
       command: start
       enable: true
+    - name: docker.service
+      command: stop
+      enable: false
     - name: flanneld.service
       command: start
       enable: true
