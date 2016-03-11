@@ -1,29 +1,35 @@
 # Default server configuration
 #
 server {
-	listen 80 default_server;
-	listen [::]:80 default_server;
+    listen 80 default_server;
 
-	root /var/www/html;
+    root /var/www/html;
 
-	# Add index.php to the list if you are using PHP
-	index index.html index.htm index.nginx-debian.html;
+    # Add index.php to the list if you are using PHP
+    index index.html index.htm index.nginx-debian.html;
 
-	server_name _;
+    server_name _;
 
-	location / {
-		# First attempt to serve request as file, then
-		# as directory, then fall back to displaying a 404.
-		try_files $uri $uri/ =404;
+    location / {
+        # First attempt to serve request as file, then
+        # as directory, then fall back to displaying a 404.
+        try_files $uri $uri/ =404;
 
-                # We need a way to get passing IP addresses to use 
-                # in cloud-init.  Rewriting the string IPV4 in nginx
-                # lua to achieve this currently.
-                header_filter_by_lua '
-                        ngx.header.content_length = nil
-                ';
-                body_filter_by_lua '
-                        ngx.arg[1] = ngx.re.gsub(ngx.arg[1],"IPV4",ngx.var.remote_addr)
-                ';
-	}
+        # We need a way to get passing variables to use 
+        # in cloud-init.
+        header_filter_by_lua '
+            ngx.header.content_length = nil
+        ';
+
+        content_by_lua '
+            local template = require "resty.template"
+            template.render(ngx.var.uri, { 
+                private_ip = ngx.var.remote_addr,
+                public_ip = ngx.var.remote_addr,
+                initital_cluster = "node01=http://192.168.1.11:2380,node02=http://192.168.1.12:2380,node03=http://192.168.1.13:2380",
+                initital_cluster_state = "existing",
+                kubernetes_version = "v1.1.7",
+                podmaster_version = "1.1" })
+        ';      
+    }
 }
