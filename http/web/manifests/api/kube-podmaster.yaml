@@ -7,12 +7,12 @@ spec:
   hostNetwork: true
   containers:
   - name: scheduler-elector
-    image: gcr.io/google_containers/podmaster:1.1
+    image: gcr.io/google_containers/podmaster:{{ podmaster_version }}
     command:
     - /podmaster
     - --etcd-servers=http://127.0.0.1:2379
     - --key=scheduler
-    - --whoami=IPV4
+    - --whoami={{ private_ip }}
     - --source-file=/src/manifests/kube-scheduler.yaml
     - --dest-file=/dst/manifests/kube-scheduler.yaml
     volumeMounts:
@@ -22,12 +22,12 @@ spec:
     - mountPath: /dst/manifests
       name: manifest-dst
   - name: controller-manager-elector
-    image: gcr.io/google_containers/podmaster:1.1
+    image: gcr.io/google_containers/podmaster:{{ podmaster_version }}
     command:
     - /podmaster
     - --etcd-servers=http://127.0.0.1:2379
     - --key=controller
-    - --whoami=IPV4
+    - --whoami={{ private_ip }}
     - --source-file=/src/manifests/kube-controller-manager.yaml
     - --dest-file=/dst/manifests/kube-controller-manager.yaml
     terminationMessagePath: /dev/termination-log
