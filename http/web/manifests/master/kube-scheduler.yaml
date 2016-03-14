@@ -16,7 +16,7 @@ spec:
     livenessProbe:
       httpGet:
         host: 127.0.0.1
-        path: /healthz
+        path: /healthz/ping
         port: 10251
-      initialDelaySeconds: 15
+      initialDelaySeconds: 5
       timeoutSeconds: 1

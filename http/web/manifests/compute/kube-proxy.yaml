@@ -15,6 +15,13 @@ spec:
     - --proxy-mode=iptables
     - --resource-container=""
     - --logtostderr=true
+    livenessProbe:
+      httpGet:
+        host: 127.0.0.1
+        path: /healthz/ping
+        port: 10249
+      initialDelaySeconds: 5
+      timeoutSeconds: 1
     securityContext:
       privileged: true
     volumeMounts:
