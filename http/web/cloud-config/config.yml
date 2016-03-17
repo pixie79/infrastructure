@@ -92,8 +92,6 @@ coreos:
            --address="0.0.0.0" \
            --api-servers=http://127.0.0.1:8080 \
            --config=/etc/kubernetes/manifests \
-           --cluster-dns=10.0.0.10 \
-           --cluster-domain=cluster.local \
            --allow-privileged=true
         Restart=always
         RestartSec=5

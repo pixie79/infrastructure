@@ -15,7 +15,8 @@ spec:
     - --admission-control=NamespaceLifecycle,NamespaceAutoProvision,LimitRanger,SecurityContextDeny,ResourceQuota
     - --runtime-config=api/v2
     - --allow-privileged=true
-    - --service-cluster-ip-range=192.168.1.0/16
+    - --apiserver-count=3
+    - --service-cluster-ip-range=10.200.0.0/16
     - --etcd-servers=http://127.0.0.1:2379
     - --logtostderr=true
     readinessProbe:
