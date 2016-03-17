@@ -88,7 +88,6 @@ coreos:
          gcr.io/google_containers/hyperkube-amd64:{{ kubernetes_version }} \
          /hyperkube kubelet \
            --containerized \
-           --hostname-override="127.0.0.1" \
            --address="0.0.0.0" \
            --api-servers=http://127.0.0.1:8080 \
            --config=/etc/kubernetes/manifests \
