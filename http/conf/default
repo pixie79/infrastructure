@@ -28,7 +28,7 @@ server {
                 public_ip = ngx.var.remote_addr,
                 initital_cluster = "node01=http://192.168.1.11:2380,node02=http://192.168.1.12:2380,node03=http://192.168.1.13:2380",
                 initital_cluster_state = "existing",
-                kubernetes_version = "v1.1.7",
+                kubernetes_version = "v1.2",
                 podmaster_version = "1.1" })
         ';      
     }
