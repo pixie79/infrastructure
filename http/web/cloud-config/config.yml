@@ -70,11 +70,11 @@ coreos:
         Environment="URL=http://nas.lan/manifests"
         ExecStartPre=/usr/bin/mkdir -p /etc/kubernetes/manifests
         ExecStartPre=/usr/bin/mkdir -p /srv/kubernetes/manifests
-        ExecStartPre=/usr/bin/wget --silent -o /etc/kubernetes/manifests/kube-apiserver.yml ${URL}/api/kube-apiserver.yml
-        ExecStartPre=/usr/bin/wget --silent -o /etc/kubernetes/manifests/kube-podmaster.yml ${URL}/api/kube-podmaster.yml
-        ExecStartPre=/usr/bin/wget --silent -o /etc/kubernetes/manifests/kube-proxy.yml ${URL}/compute/kube-proxy.yml
-        ExecStartPre=/usr/bin/wget --silent -o /srv/kubernetes/manifests/kube-controller-manager.yml ${URL}/master/kube-controller-manager.yml
-        ExecStartPre=/usr/bin/wget --silent -o /srv/kubernetes/manifests/kube-scheduler.yml ${URL}/master/kube-scheduler.yml
+        ExecStartPre=/usr/bin/curl --silent -o /etc/kubernetes/manifests/kube-apiserver.yml ${URL}/api/kube-apiserver.yml
+        ExecStartPre=/usr/bin/curl --silent -o /etc/kubernetes/manifests/kube-podmaster.yml ${URL}/api/kube-podmaster.yml
+        ExecStartPre=/usr/bin/curl --silent -o /etc/kubernetes/manifests/kube-proxy.yml ${URL}/compute/kube-proxy.yml
+        ExecStartPre=/usr/bin/curl --silent -o /srv/kubernetes/manifests/kube-controller-manager.yml ${URL}/master/kube-controller-manager.yml
+        ExecStartPre=/usr/bin/curl --silent -o /srv/kubernetes/manifests/kube-scheduler.yml ${URL}/master/kube-scheduler.yml
         ExecStartPre=/usr/bin/docker pull gcr.io/google_containers/hyperkube-amd64:{{ kubernetes_version }}
         ExecStart=/usr/bin/docker run \
           --volume=/:/rootfs:ro \
