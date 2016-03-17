@@ -56,41 +56,6 @@ coreos:
             After=var-lib-docker.mount
             Requires=var-lib-docker.mount
 
-    - name: install-kubernetes.service
-      command: start
-      content: |
-        [Unit]
-        Description=Install kubernetes
-
-        [Service]
-        Type=oneshot
-        RemainAfterExit=yes
-        TimeoutStartSec=300
-        Environment="URL=https://storage.googleapis.com/kubernetes-release/release/{{ kubernetes_version }}/bin/linux/amd64/hyperkube"
-        Environment="OUTPUT_FILE=/opt/bin/hyperkube"
-        Environment="MD5SUM=dd57058362afce77a94ba4e9152a4525"
-        ExecStart=/usr/bin/mkdir -p /opt/bin
-        ExecStart=/usr/bin/wget -q -O ${OUTPUT_FILE} ${URL}
-        ExecStart=/usr/bin/md5sum ${OUTPUT_FILE}
-        ExecStart=/usr/bin/chmod +x ${OUTPUT_FILE}
-    - name: install-manifests.service
-      command: start
-      content: |
-        [Unit]
-        Description=Install manifests
-
-        [Service]
-        Type=oneshot
-        RemainAfterExit=yes
-        TimeoutStartSec=300
-        Environment="URL=http://nas.lan/manifests"
-        ExecStartPre=/usr/bin/mkdir -p /etc/kubernetes/manifests
-        ExecStartPre=/usr/bin/mkdir -p /srv/kubernetes/manifests
-        ExecStart=/usr/bin/wget -q -O /etc/kubernetes/manifests/kube-apiserver.yaml ${URL}/api/kube-apiserver.yaml
-        ExecStart=/usr/bin/wget -q -O /etc/kubernetes/manifests/kube-podmaster.yaml ${URL}/api/kube-podmaster.yaml
-        ExecStart=/usr/bin/wget -q -O /etc/kubernetes/manifests/kube-proxy.yaml ${URL}/compute/kube-proxy.yaml
-        ExecStart=/usr/bin/wget -q -O /srv/kubernetes/manifests/kube-controller-manager.yaml ${URL}/master/kube-controller-manager.yaml
-        ExecStart=/usr/bin/wget -q -O /srv/kubernetes/manifests/kube-scheduler.yaml ${URL}/master/kube-scheduler.yaml
     - name: kube-kubelet.service
       command: start
       enabled: true
@@ -98,15 +63,38 @@ coreos:
         [Unit]
         Description=Kubernetes Kubelet
         Documentation=https://github.com/kubernetes/kubernetes
+        After=var-lib-docker.mount docker.service
+        Requires=var-lib-docker.mount docker.service
 
         [Service]
+        Environment="URL=http://nas.lan/manifests"
         ExecStartPre=/usr/bin/mkdir -p /etc/kubernetes/manifests
         ExecStartPre=/usr/bin/mkdir -p /srv/kubernetes/manifests
-        ExecStart=/opt/bin/hyperkube kubelet \
-          --api-servers=http://127.0.0.1:8080 \
-          --allow-privileged=true \
-          --config=/etc/kubernetes/manifests \
-          --v=2
+        ExecStartPre=/usr/bin/wget --silent -o /etc/kubernetes/manifests/kube-apiserver.yml ${URL}/api/kube-apiserver.yml
+        ExecStartPre=/usr/bin/wget --silent -o /etc/kubernetes/manifests/kube-podmaster.yml ${URL}/api/kube-podmaster.yml
+        ExecStartPre=/usr/bin/wget --silent -o /etc/kubernetes/manifests/kube-proxy.yml ${URL}/compute/kube-proxy.yml
+        ExecStartPre=/usr/bin/wget --silent -o /srv/kubernetes/manifests/kube-controller-manager.yml ${URL}/master/kube-controller-manager.yml
+        ExecStartPre=/usr/bin/wget --silent -o /srv/kubernetes/manifests/kube-scheduler.yml ${URL}/master/kube-scheduler.yml
+        ExecStartPre=/usr/bin/docker pull gcr.io/google_containers/hyperkube-amd64:{{ kubernetes_version }}
+        ExecStart=/usr/bin/docker run \
+          --volume=/:/rootfs:ro \
+          --volume=/sys:/sys:ro \
+          --volume=/var/lib/docker/:/var/lib/docker:rw \
+          --volume=/var/lib/kubelet/:/var/lib/kubelet:rw \
+          --volume=/var/run:/var/run:rw \
+          --net=host \
+          --pid=host \
+          --privileged=true \
+         gcr.io/google_containers/hyperkube-amd64:{{ kubernetes_version }} \
+         /hyperkube kubelet \
+           --containerized \
+           --hostname-override="127.0.0.1" \
+           --address="0.0.0.0" \
+           --api-servers=http://127.0.0.1:8080 \
+           --config=/etc/kubernetes/manifests \
+           --cluster-dns=10.0.0.10 \
+           --cluster-domain=cluster.local \
+           --allow-privileged=true
         Restart=always
         RestartSec=5
 
