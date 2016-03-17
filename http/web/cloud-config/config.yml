@@ -76,18 +76,22 @@ coreos:
         ExecStartPre=/usr/bin/curl --silent -o /srv/kubernetes/manifests/kube-controller-manager.yml ${URL}/master/kube-controller-manager.yml
         ExecStartPre=/usr/bin/curl --silent -o /srv/kubernetes/manifests/kube-scheduler.yml ${URL}/master/kube-scheduler.yml
         ExecStartPre=/usr/bin/docker pull gcr.io/google_containers/hyperkube-amd64:{{ kubernetes_version }}
+        ExecStartPre=/usr/bin/mount --bind /var/lib/kubelet /var/lib/kubelet
+        ExecStartPre=/usr/bin/mount --make-shared /var/lib/kubelet
         ExecStart=/usr/bin/docker run \
           --volume=/:/rootfs:ro \
           --volume=/sys:/sys:ro \
           --volume=/var/lib/docker/:/var/lib/docker:rw \
-          --volume=/var/lib/kubelet/:/var/lib/kubelet:rw \
+          --volume=/var/lib/kubelet/:/var/lib/kubelet:shared \
+          --volume=/etc/kubernetes/manifests/:/etc/kubernetes/manifests:rw \
+          --volume=/srv/kubernetes/manifests/:/srv/kubernetes/manifests:rw \
           --volume=/var/run:/var/run:rw \
           --net=host \
           --pid=host \
           --privileged=true \
          gcr.io/google_containers/hyperkube-amd64:{{ kubernetes_version }} \
          /hyperkube kubelet \
-           --containerized \
+           --enable-server \
            --address="0.0.0.0" \
            --api-servers=http://127.0.0.1:8080 \
            --config=/etc/kubernetes/manifests \
