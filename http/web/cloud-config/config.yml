@@ -68,9 +68,9 @@ coreos:
 
         [Service]
         Environment="URL=http://nas.lan/manifests"
-        ExecStartPre=/usr/bin/rm -rf /etc/kubernetes/manifests
-        ExecStartPre=/usr/bin/rm -rf /srv/kubernetes/manifests
-        ExecStartPre=/usr/bin/rm -rf /var/lib/kubelet
+        ExecStartPre=-/usr/bin/rm -rf /etc/kubernetes/manifests
+        ExecStartPre=-/usr/bin/rm -rf /srv/kubernetes/manifests
+        ExecStartPre=-/usr/bin/rm -rf /var/lib/kubelet
         ExecStartPre=/usr/bin/mkdir -p /etc/kubernetes/manifests
         ExecStartPre=/usr/bin/mkdir -p /srv/kubernetes/manifests
         ExecStartPre=/usr/bin/mkdir -p /var/lib/kubelet
