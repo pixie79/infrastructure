@@ -68,8 +68,12 @@ coreos:
 
         [Service]
         Environment="URL=http://nas.lan/manifests"
+        ExecStartPre=/usr/bin/rm -rf /etc/kubernetes/manifests
+        ExecStartPre=/usr/bin/rm -rf /srv/kubernetes/manifests
+        ExecStartPre=/usr/bin/rm -rf /var/lib/kubelet
         ExecStartPre=/usr/bin/mkdir -p /etc/kubernetes/manifests
         ExecStartPre=/usr/bin/mkdir -p /srv/kubernetes/manifests
+        ExecStartPre=/usr/bin/mkdir -p /var/lib/kubelet
         ExecStartPre=/usr/bin/curl --silent -o /etc/kubernetes/manifests/kube-apiserver.yml ${URL}/api/kube-apiserver.yml
         ExecStartPre=/usr/bin/curl --silent -o /etc/kubernetes/manifests/kube-podmaster.yml ${URL}/api/kube-podmaster.yml
         ExecStartPre=/usr/bin/curl --silent -o /etc/kubernetes/manifests/kube-proxy.yml ${URL}/compute/kube-proxy.yml
