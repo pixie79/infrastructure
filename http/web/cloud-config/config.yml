@@ -12,20 +12,39 @@ coreos:
     initial-cluster-state: "{{ initital_cluster_state }}"
   units:
     - name: etcd2.service
+      drop-ins:
+        - name: 10-wait-etcd2.conf
+          content: |
+            [Unit]
+            After=var-lib-etcd2.mount
+            Requires=var-lib-etcd2.mount
+            [Service]
+            ExecStartPre=/usr/bin/chown -R etcd:etcd /var/lib/etcd2
       command: start
       enable: true
     - name: fleet.service
-      command: start
-      enable: true
+      enable: false
     - name: flanneld.service
       command: start
-      enable: true
       drop-ins:
         - name: 50-network-config.conf
           content: |
             [Service]
             ExecStartPre=/usr/bin/etcdctl set /coreos.com/network/config '{"Network":"10.10.0.0/16","Backend":{"Type":"vxlan"}}'
-    - name: format-ephemeral.service
+    - name: docker.service
+      drop-ins:
+        - name: 10-tls-verify.conf
+          content: |
+            [Service]
+            Environment=DOCKER_OPTS=--log-driver=journald
+        - name: 60-docker-wait-for-flannel-config.conf
+          content: |
+            [Unit]
+            After=flanneld.service
+            Requires=flanneld.service
+            Restart=always
+      command: start
+    - name: format-ephemeral-docker.service
       command: start
       content: |
         [Unit]
@@ -37,16 +56,48 @@ coreos:
         RemainAfterExit=yes
         ExecStart=/usr/sbin/wipefs -f /dev/sda
         ExecStart=/usr/sbin/mkfs.xfs -f /dev/sda
+    - name: format-ephemeral-kubelet.service
+      command: start
+      content: |
+        [Unit]
+        Description=Formats the ephemeral drive
+        After=dev-sdc.device
+        Requires=dev-sdc.device
+        [Service]
+        Type=oneshot
+        RemainAfterExit=yes
+        ExecStart=/usr/sbin/wipefs -f /dev/sdc
+        ExecStart=/usr/sbin/mkfs.xfs -f /dev/sdc
     - name: var-lib-docker.mount
       command: start
       content: |
         [Unit]
         Description=Mount ephemeral to /var/lib/docker
-        Requires=format-ephemeral.service
-        After=format-ephemeral.service
+        Requires=format-ephemeral-docker.service
+        After=format-ephemeral-docker.service
         [Mount]
         What=/dev/sda
         Where=/var/lib/docker
+        Type=xfs
+    - name: var-lib-etcd2.mount
+      command: start
+      content: |
+        [Unit]
+        Description=Mount ephemeral to /var/lib/etcd2
+        [Mount]
+        What=/dev/sdb
+        Where=/var/lib/etcd2
+        Type=xfs
+    - name: var-lib-kubelet.mount
+      command: start
+      content: |
+        [Unit]
+        Description=Mount ephemeral to /var/lib/kubelet
+        Requires=format-ephemeral-kubelet.service
+        After=format-ephemeral-kubelet.service
+        [Mount]
+        What=/dev/sdc
+        Where=/var/lib/kubelet
         Type=xfs
     - name: docker.service
       drop-ins:
@@ -55,42 +106,6 @@ coreos:
             [Unit]
             After=var-lib-docker.mount
             Requires=var-lib-docker.mount
-
-    - name: install-kubernetes.service
-      command: start
-      content: |
-        [Unit]
-        Description=Install kubernetes
-
-        [Service]
-        Type=oneshot
-        RemainAfterExit=yes
-        TimeoutStartSec=300
-        Environment="URL=https://storage.googleapis.com/kubernetes-release/release/{{ kubernetes_version }}/bin/linux/amd64/hyperkube"
-        Environment="OUTPUT_FILE=/opt/bin/hyperkube"
-        Environment="MD5SUM=dd57058362afce77a94ba4e9152a4525"
-        ExecStart=/usr/bin/mkdir -p /opt/bin
-        ExecStart=/usr/bin/wget -q -O ${OUTPUT_FILE} ${URL}
-        ExecStart=/usr/bin/md5sum ${OUTPUT_FILE}
-        ExecStart=/usr/bin/chmod +x ${OUTPUT_FILE}
-    - name: install-manifests.service
-      command: start
-      content: |
-        [Unit]
-        Description=Install manifests
-
-        [Service]
-        Type=oneshot
-        RemainAfterExit=yes
-        TimeoutStartSec=300
-        Environment="URL=http://nas.lan/manifests"
-        ExecStartPre=/usr/bin/mkdir -p /etc/kubernetes/manifests
-        ExecStartPre=/usr/bin/mkdir -p /srv/kubernetes/manifests
-        ExecStart=/usr/bin/wget -q -O /etc/kubernetes/manifests/kube-apiserver.yaml ${URL}/api/kube-apiserver.yaml
-        ExecStart=/usr/bin/wget -q -O /etc/kubernetes/manifests/kube-podmaster.yaml ${URL}/api/kube-podmaster.yaml
-        ExecStart=/usr/bin/wget -q -O /etc/kubernetes/manifests/kube-proxy.yaml ${URL}/compute/kube-proxy.yaml
-        ExecStart=/usr/bin/wget -q -O /srv/kubernetes/manifests/kube-controller-manager.yaml ${URL}/master/kube-controller-manager.yaml
-        ExecStart=/usr/bin/wget -q -O /srv/kubernetes/manifests/kube-scheduler.yaml ${URL}/master/kube-scheduler.yaml
     - name: kube-kubelet.service
       command: start
       enabled: true
@@ -98,14 +113,39 @@ coreos:
         [Unit]
         Description=Kubernetes Kubelet
         Documentation=https://github.com/kubernetes/kubernetes
+        Requires=docker.service etcd2.service
+        After=docker.service etcd2.service
 
         [Service]
+        Environment="API_MANIFEST_URL=http://nas.lan:8080/manifests/kube-apiserver.yaml"
+        Environment="CONTROLLER_MANIFEST_URL=http://nas.lan:8080/manifests/kube-controller-manager.yaml"
+        Environment="HYPBERKUBE_URL=https://storage.googleapis.com/kubernetes-release/release/{{ kubernetes_version }}/bin/linux/amd64/hyperkube"
+        Environment="OUTPUT_FILE=/opt/bin/hyperkube"
+        ExecStartPre=/usr/bin/mkdir -p /opt/bin
+        ExecStartPre=/usr/bin/curl --silent -o ${OUTPUT_FILE} ${HYPBERKUBE_URL}
+        ExecStartPre=/usr/bin/md5sum ${OUTPUT_FILE} 
+        ExecStartPre=/usr/bin/chmod +x ${OUTPUT_FILE}
         ExecStartPre=/usr/bin/mkdir -p /etc/kubernetes/manifests
-        ExecStartPre=/usr/bin/mkdir -p /srv/kubernetes/manifests
+        ExecStartPre=/usr/bin/curl --silent -o /etc/kubernetes/manifests/kube-controller-manager.yaml ${CONTROLLER_MANIFEST_URL}
+        ExecStartPre=/usr/bin/curl --silent -o /etc/kubernetes/manifests/kube-apiserver.yaml ${API_MANIFEST_URL}
+        ExecStartPre=/usr/bin/mkdir -p /var/run/kubernetes
+        ExecStartPre=/bin/sh -c '/usr/bin/etcdctl get /certs/tokens.csv > /var/run/kubernetes/tokens.csv'
+        ExecStartPre=/bin/sh -c '/usr/bin/etcdctl get /certs/ca.pem > /var/run/kubernetes/ca.pem'
+        ExecStartPre=/bin/sh -c '/usr/bin/etcdctl get /certs/kube-apiserver-server-key.pem > /var/run/kubernetes/kube-apiserver-server-key.pem'
+        ExecStartPre=/bin/sh -c '/usr/bin/etcdctl get /certs/kube-apiserver-server.pem > /var/run/kubernetes/kube-apiserver-server.pem'
+        ExecStartPre=/bin/sh -c '/usr/bin/etcdctl get /certs/kube-proxy-client-key.pem > /var/run/kubernetes/kube-proxy-client-key.pem'
+        ExecStartPre=/bin/sh -c '/usr/bin/etcdctl get /certs/kube-proxy-client.pem > /var/run/kubernetes/kube-proxy-client.pem'
+        ExecStartPre=/bin/sh -c '/usr/bin/etcdctl get /certs/kubelet-client-key.pem > /var/run/kubernetes/kubelet-client-key.pem'
+        ExecStartPre=/bin/sh -c '/usr/bin/etcdctl get /certs/kubelet-client.pem > /var/run/kubernetes/kubelet-client.pem'
         ExecStart=/opt/bin/hyperkube kubelet \
           --api-servers=http://127.0.0.1:8080 \
+          --manifest-url=${MANIFEST_URL} \
           --allow-privileged=true \
+          --cloud-provider= \
+          --cluster-dns=10.200.0.10 \
+          --cluster-domain=cluster.local \
           --config=/etc/kubernetes/manifests \
+          --serialize-image-pulls=false \
           --v=2
         Restart=always
         RestartSec=5
