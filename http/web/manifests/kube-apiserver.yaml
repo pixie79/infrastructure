@@ -7,15 +7,22 @@ spec:
   hostNetwork: true
   containers:
   - name: kube-apiserver
-    image: gcr.io/google_containers/hyperkube:{{ kubernetes_version }}
+    image: gcr.io/google_containers/hyperkube:v1.2.4
     command:
     - /hyperkube
     - apiserver
-    - --service-account-lookup=false
-    - --admission-control=NamespaceLifecycle,NamespaceAutoProvision,LimitRanger,SecurityContextDeny,ResourceQuota
-    - --allow-privileged=false
+    - --admission-control=NamespaceLifecycle,LimitRanger,SecurityContextDeny,ServiceAccount,ResourceQuota,AlwaysPullImages
+    - --authorization-mode=AlwaysAllow
     - --service-cluster-ip-range=10.200.0.0/16
+    - --allow-privileged=true
     - --etcd-servers=http://127.0.0.1:2379
+    - --cloud-provider=
+    - --apiserver-count=3
+    - --token-auth-file=/var/run/kubernetes/tokens.csv
+    - --client-ca-file=/var/run/kubernetes/ca.pem
+    - --tls-cert-file=/var/run/kubernetes/kube-apiserver-server.pem
+    - --tls-private-key-file=/var/run/kubernetes/kube-apiserver-server-key.pem
+    - --logtostderr=true
     - --logtostderr=true
     readinessProbe:
       httpGet:
@@ -39,15 +46,14 @@ spec:
       hostPort: 8080
       name: local
     volumeMounts:
-    - mountPath: /etc/kubernetes/ssl
+    - mountPath: /var/run/kubernetes
       name: ssl-certs-kubernetes
-      readOnly: true
     - mountPath: /etc/ssl/certs
       name: ssl-certs-host
       readOnly: true
   volumes:
   - hostPath:
-      path: /etc/kubernetes/ssl
+      path: /var/run/kubernetes
     name: ssl-certs-kubernetes
   - hostPath:
       path: /usr/share/ca-certificates

@@ -1,41 +1,47 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: kube-proxy
+  name: kube-controller-manager
   namespace: kube-system
 spec:
   hostNetwork: true
   containers:
-  - name: kube-proxy
-    image: gcr.io/google_containers/hyperkube:{{ kubernetes_version }}
+  - name: kube-controller-manager
+    image: gcr.io/google_containers/hyperkube:v1.2.4
     command:
     - /hyperkube
-    - proxy
+    - controller-manager
     - --master=http://127.0.0.1:8080
-    - --proxy-mode=iptables
-    - --resource-container=""
+    - --root-ca-file=/var/run/kubernetes/ca.pem
+    - --service-account-private-key-file=/var/run/kubernetes/kube-apiserver-server-key.pem
+    - --cloud-provider=
+    - --leader-elect=true
     - --logtostderr=true
     readinessProbe:
       httpGet:
         host: 127.0.0.1
         path: /healthz
-        port: 10249
+        port: 10252
       initialDelaySeconds: 10
       timeoutSeconds: 1
     livenessProbe:
       httpGet:
         host: 127.0.0.1
         path: /healthz/ping
-        port: 10249
+        port: 10252
       initialDelaySeconds: 5
       timeoutSeconds: 1
-    securityContext:
-      privileged: true
     volumeMounts:
+    - mountPath: /var/run/kubernetes
+      name: ssl-certs-kubernetes
+      readOnly: true
     - mountPath: /etc/ssl/certs
       name: ssl-certs-host
       readOnly: true
   volumes:
+  - hostPath:
+      path: /var/run/kubernetes
+    name: ssl-certs-kubernetes
   - hostPath:
       path: /usr/share/ca-certificates
     name: ssl-certs-host

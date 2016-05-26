@@ -1,0 +1,36 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: kube-scheduler
+  namespace: kube-system
+spec:
+  template:
+    metadata:
+      labels:
+        app: kube-scheduler
+      name: kube-scheduler
+    spec:
+      hostNetwork: true
+      containers:
+      - name: kube-scheduler
+        image: gcr.io/google_containers/hyperkube:v1.2.4
+        command:
+        - /hyperkube
+        - scheduler
+        - --master=http://127.0.0.1:8080
+        - --leader-elect=true
+        - --logtostderr=true
+        readinessProbe:
+          httpGet:
+            host: 127.0.0.1
+            path: /healthz
+            port: 10251
+          initialDelaySeconds: 10
+          timeoutSeconds: 1
+        livenessProbe:
+          httpGet:
+            host: 127.0.0.1
+            path: /healthz/ping
+            port: 10251
+          initialDelaySeconds: 5
+          timeoutSeconds: 1

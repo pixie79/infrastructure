@@ -1,0 +1,45 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: kube-proxy
+  namespace: kube-system
+spec:
+  template:
+    metadata:
+      labels:
+        app: kube-proxy
+      name: kube-proxy
+    spec:
+      hostNetwork: true
+      containers:
+      - name: kube-proxy
+        image: gcr.io/google_containers/hyperkube:v1.2.4
+        command:
+        - /hyperkube
+        - proxy
+        - --master=http://127.0.0.1:8080
+        - --logtostderr=true
+        readinessProbe:
+          httpGet:
+            host: 127.0.0.1
+            path: /healthz
+            port: 10249
+          initialDelaySeconds: 10
+          timeoutSeconds: 1
+        livenessProbe:
+          httpGet:
+            host: 127.0.0.1
+            path: /healthz/ping
+            port: 10249
+          initialDelaySeconds: 5
+          timeoutSeconds: 1
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - mountPath: /etc/ssl/certs
+          name: ssl-certs-host
+          readOnly: true
+      volumes:
+      - hostPath:
+          path: /usr/share/ca-certificates
+        name: ssl-certs-host
