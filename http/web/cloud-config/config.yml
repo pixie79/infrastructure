@@ -33,7 +33,7 @@ coreos:
             ExecStartPre=/usr/bin/etcdctl set /coreos.com/network/config '{"Network":"10.10.0.0/16","Backend":{"Type":"vxlan"}}'
     - name: docker.service
       drop-ins:
-        - name: 10-tls-verify.conf
+        - name: 20-log-driver.conf
           content: |
             [Service]
             Environment=DOCKER_OPTS=--log-driver=journald
@@ -49,25 +49,25 @@ coreos:
       content: |
         [Unit]
         Description=Formats the ephemeral drive
-        After=dev-sda.device
-        Requires=dev-sda.device
+        After=dev-sda.device dev-sdb.device dev-sdc.device
+        Requires=dev-sda.device dev-sdb.device dev-sdc.device
         [Service]
         Type=oneshot
         RemainAfterExit=yes
-        ExecStart=/usr/sbin/wipefs -f /dev/sda
-        ExecStart=/usr/sbin/mkfs.xfs -f /dev/sda
+        ExecStart=/usr/sbin/wipefs -f /dev/disk/by-path/pci-0000:00:14.0-usb-0:2:1.0-scsi-0:0:0:0
+        ExecStart=/usr/sbin/mkfs.xfs -f /dev/disk/by-path/pci-0000:00:14.0-usb-0:2:1.0-scsi-0:0:0:0
     - name: format-ephemeral-kubelet.service
       command: start
       content: |
         [Unit]
         Description=Formats the ephemeral drive
-        After=dev-sdc.device
-        Requires=dev-sdc.device
+        After=dev-sda.device dev-sdb.device dev-sdc.device
+        Requires=dev-sda.device dev-sdb.device dev-sdc.device
         [Service]
         Type=oneshot
         RemainAfterExit=yes
-        ExecStart=/usr/sbin/wipefs -f /dev/sdc
-        ExecStart=/usr/sbin/mkfs.xfs -f /dev/sdc
+        ExecStart=/usr/sbin/wipefs -f /dev/disk/by-path/pci-0000:00:14.0-usb-0:4:1.0-scsi-0:0:0:0
+        ExecStart=/usr/sbin/mkfs.xfs -f /dev/disk/by-path/pci-0000:00:14.0-usb-0:4:1.0-scsi-0:0:0:0
     - name: var-lib-docker.mount
       command: start
       content: |
@@ -76,7 +76,7 @@ coreos:
         Requires=format-ephemeral-docker.service
         After=format-ephemeral-docker.service
         [Mount]
-        What=/dev/sda
+        What=/dev/disk/by-path/pci-0000:00:14.0-usb-0:2:1.0-scsi-0:0:0:0
         Where=/var/lib/docker
         Type=xfs
     - name: var-lib-etcd2.mount
@@ -84,8 +84,10 @@ coreos:
       content: |
         [Unit]
         Description=Mount ephemeral to /var/lib/etcd2
+        Requires=dev-sda.device dev-sdb.device dev-sdc.device
+        After=dev-sda.device dev-sdb.device dev-sdc.device
         [Mount]
-        What=/dev/sdb
+        What=/dev/disk/by-path/pci-0000:00:14.0-usb-0:3:1.0-scsi-0:0:0:0
         Where=/var/lib/etcd2
         Type=xfs
     - name: var-lib-kubelet.mount
@@ -96,7 +98,7 @@ coreos:
         Requires=format-ephemeral-kubelet.service
         After=format-ephemeral-kubelet.service
         [Mount]
-        What=/dev/sdc
+        What=/dev/disk/by-path/pci-0000:00:14.0-usb-0:4:1.0-scsi-0:0:0:0
         Where=/var/lib/kubelet
         Type=xfs
     - name: docker.service
