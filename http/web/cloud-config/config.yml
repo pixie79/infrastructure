@@ -1,6 +1,6 @@
 #cloud-config
 ssh_authorized_keys:
-  - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCXP0R6oA3/q7xeX++rjsZCR4mw69KZZQcDWamS8Aj+/gMO5xx7QZvf/3RYhDF/QZNix0GSG80x2KRZnwbTo/wnFp06BEeRYU3FHGOrS33O5Z4hn5THXUeiZdCUMQxeK03Lj+ajFHile20Eqx23RZwCkKWPY2hrneehLR02o1n8l1kSSxrKozLRge+uPrV1IVBszqZDcyXQ7KK5N3N/nmNnb81chZH8UGT0MlJbqKL90v+LdliVtwT9hKK2C0v3bHgDo+rPImEVMzXg85+kso88paZKntlvXSAbg9KfKHHKms/iykOhsnURPb99S/uR4Q8wUQd6piwBGcMR2hQ1P8KB allan@adegnan.net
+  - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC/uNxrRXeZUn44iE4Z10BClAw+i8JBtkg0hTYbxmUoy4ayBxhaRRH9Y9DtmLUxHDtxv/rf/BS4LE15XwA6eT2izYnOGpEFjrfB5UyVLRyFokLOmRwcLopt/hsXrioZWiIcDBhXpLWSMDDwQ+x7USlxygGtD9bTmGHWNNFbjW1mLKoxGiMYWs3jgBHxfnlbPUhTRc+v/fnDuL2gUKdgWBonrwAzXNb6+cJYD/iKARg/fgg5Y7jstHWzd2cjdSKDeQNsNK0b5yzjojeYYEDFOvUXoFhjo36GKcyvOw4V9Azh5f+Ej4BHW8IPgmn05cTR8WJJ8Jeqt24MbeWxdpHYf0I3 molliver@keao.cloud
 coreos:
   etcd2:
     name: "%H"
@@ -119,8 +119,8 @@ coreos:
         After=docker.service etcd2.service
 
         [Service]
-        Environment="API_MANIFEST_URL=http://nas.lan:8080/manifests/kube-apiserver.yaml"
-        Environment="CONTROLLER_MANIFEST_URL=http://nas.lan:8080/manifests/kube-controller-manager.yaml"
+        Environment="API_MANIFEST_URL=https://raw.githubusercontent.com/pixie79/infrastructure/master/http/web/manifests/kube-apiserver.yaml"
+        Environment="CONTROLLER_MANIFEST_URL=https://raw.githubusercontent.com/pixie79/infrastructure/master/http/web/manifests/kube-controller-manager.yaml"
         Environment="HYPBERKUBE_URL=https://storage.googleapis.com/kubernetes-release/release/{{ kubernetes_version }}/bin/linux/amd64/hyperkube"
         Environment="OUTPUT_FILE=/opt/bin/hyperkube"
         ExecStartPre=/usr/bin/mkdir -p /opt/bin
